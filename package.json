@@ -1,0 +1,38 @@
+{
+  "name": "techflow",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "up": "knex migrate:up",
+    "down": "knex migrate:down"
+  },
+  "author": "Colin Daniel",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.5.0",
+    "aws-sdk": "^2.844.0",
+    "bcrypt": "^5.0.0",
+    "body-parser": "^1.19.0",
+    "busboy": "^0.3.1",
+    "connect": "^3.7.0",
+    "cors": "^2.8.5",
+    "digitalocean": "^1.2.1",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "express-fileupload": "^1.2.1",
+    "fs": "0.0.1-security",
+    "jsonwebtoken": "^8.5.1",
+    "knex": "^0.21.15",
+    "multiparty": "^4.2.2",
+    "path": "^0.12.7",
+    "pg": "^7.4.3",
+    "stream": "0.0.2",
+    "stream-buffers": "^3.0.2",
+    "uuid": "^3.4.0"
+  },
+  "engines": {
+    "node": "12.16.3"
+  }
+}
