@@ -99,8 +99,11 @@ router.get("/:name", async(req, res) => {
   let errorCode = 400;
   try {
     console.log(`GET /m/meme/:name hit, name: ${req.params.name}`);
-    const { name } = req.params;
+    const { name: s3_meme_name } = req.params;
     const range = req.headers.range;
+
+
+    const groupname = s3_meme_name.slice(0, s3_meme_name.length - 2);
 
     if (!range) {
       res.status(400).send("Requires Range header");
@@ -110,9 +113,9 @@ router.get("/:name", async(req, res) => {
       `
         SELECT size, format
         FROM meme
-        WHERE name = $1;
+        WHERE "nameGroup" = $1;
       `,
-      [name]
+      [groupname]
     );
 
     if (!memeQuery.rowCount) {
@@ -124,7 +127,7 @@ router.get("/:name", async(req, res) => {
 
     const params = {
       Bucket: process.env.AWS_BUCKET_NAME,
-      Key: name,
+      Key: s3_meme_name,
       Range: `bytes=${contentRange}`
     };
     let memeObj = {};
@@ -225,14 +228,19 @@ router.post("/upload-meme", async(req, res) => {
 
     const { files } = req;
 
+
+    console.log(req.body)
     const { username, desc, tags } = req.body;
     
+
+
     if (!username) {
       return res.status(401).send('No user was associated to this request');
     }
 
     // Temporary, maybe use knex.raw again?
     if (
+      desc &&
       desc.includes(';') &&
       dangerStrings.filter(s => desc.toUpperCase().includes(s))
         .length
@@ -302,7 +310,7 @@ router.post("/upload-meme", async(req, res) => {
   
       if (tags) {
         for (let i = 0; i < tags.length; i++) {
-          if (!availableTags.includes(tags[i])) {
+          if (tags && !availableTags.includes(tags[i])) {
             return res.status(errorCode).send("invalid tag");
           } else {
             await pool.query(`
@@ -424,7 +432,7 @@ router.post("/upload-link", async(req, res) => {
     // adds tags to link
     if (allTags) {
       for (let i = 0; i < allTags.length; i++) {
-        if (!availableTags.includes(allTags[i])) {
+        if (tags && !availableTags.includes(allTags[i])) {
           return res.status(errorCode).send("invalid tag");
         } else {
           // TODO: add to order to have them chronologically sorted
