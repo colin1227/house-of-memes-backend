@@ -14,20 +14,21 @@ const hashIt = (password) => {
 router.post('/sign-in', async(req, res) => {
   let errorCode = 400;
   try {
-    if (!req.body.username) throw Error('no username');
-    if (!req.body.password) throw Error('no password');
+    if (!req.body.username) throw Error('Username is required to Login');
+    if (!req.body.password) throw Error('Password is required to Login');
+    // TODO: username to lower case.
     const { username, password } = req.body;
-
     const userQuery = await pool.query(`
       SELECT password, userid
       FROM userprofile
       WHERE username = $1;
       `, [username]); // add status to select query
-    if (userQuery.rows.length <= 0) throw Error('Something went wrong'); // no username found
+
+    if (userQuery.rows.length <= 0) throw Error('specified user was not found'); // no username found
     bcrypt.compare(password, userQuery.rows[0].password, function(err, result) {
       // execute code to test for access and login
       if(err) {
-        return Error("something went wrong"); // didn't match
+        return Error("Login failure"); // didn't match
       }
       return true;
     });
@@ -64,6 +65,7 @@ router.post('/sign-in', async(req, res) => {
       token
     })
   } catch({ message }) {
+    console.log(message);
     res.status(errorCode).json({
       message
     })

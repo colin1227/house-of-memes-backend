@@ -15,4 +15,40 @@ router.get('/test', async(req, res) => {
   }
 })
 
+router.get('/manage', async(req, res) => {
+  try {
+    // console.log(req)
+    // adminCheck(req.cookies);
+
+    const userNumbersQuery = await pool.query(`
+      SELECT username
+      FROM userprofile;
+    `);
+
+    const memeNumbersQuery = await pool.query(`
+      SELECT COUNT(*)
+      FROM meme;
+    `);
+
+    const tagQuery = await pool.query(`
+      SELECT groupname
+      FROM contenttags;
+    `)
+
+
+    // res.json(req.headers);
+    res.json({
+      users: userNumbersQuery.rows.map(a => a.username),
+      hashtags: tagQuery.rows.map(a => a.groupname),
+      memeCount: Number(memeNumbersQuery.rows[0].count)
+    });
+
+  } catch(err) {
+    console.log(err.message);
+    res.status(400).json({
+      respondus: "no good"
+    })
+  }
+})
+
 module.exports = router;

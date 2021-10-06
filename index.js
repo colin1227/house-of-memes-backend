@@ -12,16 +12,10 @@ const users = require("./routes/users/index");
 const general = require("./routes/general/general");
 const groups = require("./routes/groups/index");
 const app = express();
-// const router = express.Router();
-
-
-const shortWhiteList = ['localhost:3000/*', 'parasocial-media.com', '*.parasocial-media.com/*'];
 
 app.use(fileUpload());
 
 app.use(cors());
-
-app.use(bodyParser.json({ extended: true }));
 
 app.use("/memes/", memes);
 app.use("/users/", users);
@@ -41,18 +35,15 @@ server.keepAliveTimeout = 60000 * 2;
 app.use(function(req, res, _){
   res.status(404);
 
-  // respond with html page
   if (req.accepts('html')) {
-    res.json({ url: req.url });
+    res.json({ url: `${req.url} not found, try again` });
     return;
   }
 
-  // respond with json
   if (req.accepts('json')) {
-    res.json({ error: 'Not found' });
+    res.json({ error: 'Not found, try again' });
     return;
   }
 
-  // default to plain-text. send()
-  res.type('txt').send('Not found');
+  res.type('txt').send('Not found, try again');
 });
