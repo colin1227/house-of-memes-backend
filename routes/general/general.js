@@ -15,7 +15,7 @@ router.get('/test', async(req, res) => {
   }
 })
 
-router.get('/manage', async(req, res) => {
+router.get('/manage', async(req, res, nex) => {
   try {
     // console.log(req)
     // adminCheck(req.cookies);
@@ -44,6 +44,7 @@ router.get('/manage', async(req, res) => {
     });
 
   } catch(err) {
+    next(err) // Pass errors to Express.
     console.log(err.message);
     res.status(400).json({
       respondus: "no good"

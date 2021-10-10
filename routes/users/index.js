@@ -11,7 +11,7 @@ const hashIt = (password) => {
   return bcrypt.hashSync(password, salt);
 }
 
-router.post('/sign-in', async(req, res) => {
+router.post('/sign-in', async(req, res, next) => {
   let errorCode = 400;
   try {
     if (!req.body.username) throw Error('Username is required to Login');
@@ -72,7 +72,7 @@ router.post('/sign-in', async(req, res) => {
   }
 });
 
-router.post('/sign-up', async(req, res) => {
+router.post('/sign-up', async(req, res, next) => {
   let errorCode = 400;
   try {
     const { username, password } = req.body;
