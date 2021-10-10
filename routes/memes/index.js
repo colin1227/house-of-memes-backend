@@ -46,7 +46,7 @@ function onlyUnique(value, index, self) {
 const router = express.Router();
 
 // ??
-router.get('/preview/:id', async(req, res) => {
+router.get('/preview/:id', async(req, res, next) => {
   let errorCode = 400;
   try {
     
@@ -76,6 +76,7 @@ router.get('/preview/:id', async(req, res) => {
     try {
       memeObj = await s3.getObject(params);
     } catch (err) {
+      next(err) // Pass errors to Express.
       return res.status(500).json({
         message: "Hey, Can we talk? We need to spend some time apart. I've been down lately and It's not you it's me I just need some time. FeelsBadMan"
       })
@@ -92,13 +93,14 @@ router.get('/preview/:id', async(req, res) => {
     memeObj.createReadStream().pipe(res);
 
   } catch (err) {
+    next(err) // Pass errors to Express.
     res.status(errorCode).send('something didnt work');
   }
 })
 
 
 // specific meme
-router.get("/:name", async(req, res) => {
+router.get("/:name", async(req, res, next) => {
   let errorCode = 400;
   try {
     console.log(`GET /m/meme/:name hit, name: ${req.params.name}`);
@@ -160,6 +162,7 @@ router.get("/:name", async(req, res) => {
       })
     }
   } catch(err) {
+    next(err) // Pass errors to Express.
     console.log(err.message)
     res.status(errorCode).json({
       message: "something went wrong"
@@ -169,7 +172,7 @@ router.get("/:name", async(req, res) => {
 
 
 // get memes info to reqest in frontend viewers
-router.get("/imports/:n", async(req, res) => {
+router.get("/imports/:n", async(req, res, next) => {
   try{
     console.log(`/memes/imports/:n hit; n: ${req.params.n}`);
     if (req.query.token && !verifyAToken(req.query.token)) {
@@ -201,6 +204,7 @@ router.get("/imports/:n", async(req, res) => {
       }
     });
   } catch (err) {
+    next(err) // Pass errors to Express.
     console.log(err.message);
     return res.status(400).json({
       error: err.message
@@ -210,7 +214,7 @@ router.get("/imports/:n", async(req, res) => {
 
 
 // upload a video/image/audio
-router.post("/upload-meme", async(req, res) => {
+router.post("/upload-meme", async(req, res, next) => {
   let errorCode = 400;
   try {
     console.log('POST /memes/upload-meme hit');
@@ -342,6 +346,7 @@ router.post("/upload-meme", async(req, res) => {
     });
 
   } catch (err) {
+    next(err) // Pass errors to Express.
     console.log(err.message);
     return res.status(errorCode).json({
       error: "There was a problem, Try again, unless this is you trying again then you can stop, Sooo, if your seeing this ... sorry it doesn't work? ¯\\_(ツ)_/¯ "
@@ -351,7 +356,7 @@ router.post("/upload-meme", async(req, res) => {
 
 
 // upload a link
-router.post("/upload-link", async(req, res) => {
+router.post("/upload-link", async(req, res, next) => {
   let errorCode = 400;
   try {
     console.log('POST /memes/upload-link hit');
@@ -471,6 +476,7 @@ router.post("/upload-link", async(req, res) => {
     })
 
   } catch(err) {
+    next(err) // Pass errors to Express.
     console.log(err.message);
     return res.status(errorCode).json({
       error: "There was a problem, Try again, unless this is you trying again then you can stop, Sooo, if your seeing this ... sorry it doesn't work? ¯\\_(ツ)_/¯ "

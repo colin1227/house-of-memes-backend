@@ -8,7 +8,7 @@ const { verifyAToken, decodeToken } = require('../../jwt/jwt');
 
 const router = express.Router();
 
-router.get('/', async(req, res) => {
+router.get('/', async(req, res, next) => {
   let errorCode = 400;
   try {
     console.log('GET /groups hit');
@@ -32,6 +32,7 @@ router.get('/', async(req, res) => {
 
   } catch (err) {
     // errorCode = err.status;
+    next(err) // Pass errors to Express.
     console.log('/groups failed req', err.message);
     res.status(errorCode).json({
       message: "something broke, sorry"
@@ -39,7 +40,7 @@ router.get('/', async(req, res) => {
   }
 });
 
-router.get('/search/:term', async(req, res) => {
+router.get('/search/:term', async(req, res, next) => {
   let errorCode = 400;
   try {
     let decodedToken = {};
@@ -64,13 +65,14 @@ router.get('/search/:term', async(req, res) => {
       allGroups: results.rows.map(r => r.groupname)
     })
   } catch(err) {
+    next(err) // Pass errors to Express.
     res.status(errorCode).json({
       message : err.message
     })
   }
 })
 
-router.get('/:groupname', async(req, res) => {
+router.get('/:groupname', async(req, res, next) => {
 
   let errorCode = 400;
   try {
@@ -119,17 +121,20 @@ router.get('/:groupname', async(req, res) => {
       memeRows: memeQueryResults.rowCount
     })
   } catch (err) {
+    next(err) // Pass errors to Express.
+
     res.status(errorCode).json({
       message: err
     })
   }
 });
 
-router.get('/:groupname/invite', async(req, res) => {
+router.get('/:groupname/invite', async(req, res, next) => {
   let errorCode = 400;
   try {
     
   } catch(err) {
+    next(err) // Pass errors to Express.
     res.status(errorCode).json({
       message
     })

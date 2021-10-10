@@ -6,19 +6,17 @@ var corsOptions = {
   optionsSuccessStatus: 200
 };
 
-const { pool } = require('../../db/index');
+// const { pool } = require('../../db/index');
 
 const router = express.Router();
 
-router.get('/rose', cors(corsOptions), async(req, res) => {
+router.get('/free-real-estate', cors(corsOptions), async(req, res, next) => {
   try {
-    pool.query('SELECT NOW();', (err, res) => {
-      console.log("____--- ~~~ PogU", res)
-    })
     return res.status(200).json({
-      one: "time for the 1"
+      itIsFreeRealEstate: "*smug smirk towards camera, somewhat sensually sugestive*"
     })
   } catch (err) {
+    next(err)  // Pass errors to Express.
     console.log(err.message);
     return err.message;
   }
