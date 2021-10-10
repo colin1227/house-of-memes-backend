@@ -45,6 +45,7 @@ function onlyUnique(value, index, self) {
 
 const router = express.Router();
 
+// ??
 router.get('/preview/:id', async(req, res) => {
   let errorCode = 400;
   try {
@@ -95,6 +96,8 @@ router.get('/preview/:id', async(req, res) => {
   }
 })
 
+
+// specific meme
 router.get("/:name", async(req, res) => {
   let errorCode = 400;
   try {
@@ -164,6 +167,8 @@ router.get("/:name", async(req, res) => {
   }
 })
 
+
+// get memes info to reqest in frontend viewers
 router.get("/imports/:n", async(req, res) => {
   try{
     console.log(`/memes/imports/:n hit; n: ${req.params.n}`);
@@ -203,6 +208,8 @@ router.get("/imports/:n", async(req, res) => {
   };
 });
 
+
+// upload a video/image/audio
 router.post("/upload-meme", async(req, res) => {
   let errorCode = 400;
   try {
@@ -342,6 +349,8 @@ router.post("/upload-meme", async(req, res) => {
   };
 });
 
+
+// upload a link
 router.post("/upload-link", async(req, res) => {
   let errorCode = 400;
   try {
