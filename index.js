@@ -7,10 +7,10 @@ require('dotenv').config();
 
 const port = process.env.PORT || 9000;
 
-const memes = require("./routes/memes/index");
-const users = require("./routes/users/index");
+const memes = require("./routes/memes/memes");
+const users = require("./routes/users/users");
 const general = require("./routes/general/general");
-const groups = require("./routes/groups/index");
+const groups = require("./routes/groups/groups");
 const app = express();
 
 app.use(fileUpload());

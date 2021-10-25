@@ -1,53 +1,45 @@
 const express = require('express');
-const { s3 } = require('../../aws/index');
-const { pool } = require('../../db/index');
+
+const {
+  usernamesQuery,
+  memeCountQuery,
+  tagQuery } = require('../../db/queries');
 const router = express.Router();
 
-router.get('/test', async(req, res) => {
+router.get('/test', async(req, res, next) => {
   try {
     res.json({
       testRoute: 'yes'
     })
   } catch (err) {
-    res.status(400).json({
-      broken: err.message
+    next(err);
+    res.status(err.status).json({
+      error: err.message
     });
   }
 })
 
-router.get('/manage', async(req, res, nex) => {
+router.get('/manage', async(req, res, next) => {
   try {
-    // console.log(req)
-    // adminCheck(req.cookies);
+    let usernames = await usernamesQuery();
+    usernames = usernames.rows.map(row => row.username);
 
-    const userNumbersQuery = await pool.query(`
-      SELECT username
-      FROM userprofile;
-    `);
+    let hashtags = await tagQuery();
+    hashtags = hashtags.rows.map(row => row.groupname);
 
-    const memeNumbersQuery = await pool.query(`
-      SELECT COUNT(*)
-      FROM meme;
-    `);
+    let memeCount = await memeCountQuery();
+    memeCount = memeCount.rows[0].count;
 
-    const tagQuery = await pool.query(`
-      SELECT groupname
-      FROM contenttags;
-    `)
-
-
-    // res.json(req.headers);
     res.json({
-      users: userNumbersQuery.rows.map(a => a.username),
-      hashtags: tagQuery.rows.map(a => a.groupname),
-      memeCount: Number(memeNumbersQuery.rows[0].count)
+      users: usernames,
+      hashtags: hashtags,
+      memeCount
     });
 
   } catch(err) {
     next(err) // Pass errors to Express.
-    console.log(err.message);
-    res.status(400).json({
-      respondus: "no good"
+    res.status(err.status).json({
+      error: err.message
     })
   }
 })

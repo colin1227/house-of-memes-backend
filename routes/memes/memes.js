@@ -2,33 +2,51 @@ const express = require("express");
 const fs = require('fs');
 const { v4 } = require("uuid");
 
-const { s3 } = require('../../aws/index');
-const { pool } = require('../../db/index');
+const {
+  memeCountQuery,
+  previewQuery,
+  memesFloorRandomQuery,
+  createMemeTagEntry,
+  createTagEntry,
+  createWebLinkEnteryQuery,
+  createMemeTagAssociation,
+  tagCheckQuery } = require('../../db/queries');
+
 const { verifyAToken, decodeToken } = require('../../jwt/jwt');
 
+const router = express.Router();
 
 const dangerStrings = ['SELECT', 'INSERT', 'DROP', 'DECLARE'];
 
-// TODO: export recRand, and router from other files then re-import
-// TODO: fix threeParamQuery and rename to withoutRepeatQuery.
+const uploadIsValid = (username, description) => {
+  if (!username) {
+    return {
+      valid: false,
+      status: 401,
+      message: 'No user was associated to this request'
+    }
+  } else if (
+    description &&
+    description.includes(';') &&
+    dangerStrings.filter(s => description.toUpperCase().includes(s))
+      .length
+    ) {
+    return {
+      valid: false,
+      status: 401,
+      message: "invalid description"
+    }
+  ;
+  } else {
+    return {
+      valid: true
+    }
+  }
+  // TODO: tag check(similar to dangerStrings)
+}
+
+// TODO: export recRand, and router from other files then import
 // TODO: add content ordering to queries in upload routes.
-
-const threeParamQuery = (first, second, thrid) => {
-  return `
-  SELECT name, "nameGroup", format, description
-  FROM meme
-  WHERE name NOT IN(${first.map(o => `'${o}'`)})
-  ORDER BY FLOOR(random() * ${second})
-  LIMIT ${thrid};`
-} 
-
-const twoParamQuery = (first, second) => {
-  return `
-  SELECT name, "nameGroup", format, description
-  FROM meme
-  ORDER BY FLOOR(random() * ${first})
-  LIMIT ${second};`
-};
 
 const recRand = (arr, final) => {
   const passing = Math.floor(Math.random() * arr.length);
@@ -39,25 +57,16 @@ const recRand = (arr, final) => {
   }
 }
 
-function onlyUnique(value, index, self) {
+const onlyUnique = (value, index, self)  => {
   return self.indexOf(value) === index;
 }
 
-const router = express.Router();
-
-// ??
 router.get('/preview/:id', async(req, res, next) => {
-  let errorCode = 400;
   try {
     
     const { id } = req.params;
 
-    const results = await pool.query(`
-      SELECT previewsize, previewformat
-      FROM weblinks
-      WHERE weblinkid = $1;
-      `,[id]);
-
+    const results = previewQuery(id);
 
     if (!results.rows.length) {
       return res.status(400).send('no preview available');
@@ -94,14 +103,13 @@ router.get('/preview/:id', async(req, res, next) => {
 
   } catch (err) {
     next(err) // Pass errors to Express.
-    res.status(errorCode).send('something didnt work');
+    res.status(err.status).json({
+      error: err.message
+    });
   }
 })
 
-
-// specific meme
 router.get("/:name", async(req, res, next) => {
-  let errorCode = 400;
   try {
     console.log(`GET /m/meme/:name hit, name: ${req.params.name}`);
     const { name: s3_meme_name } = req.params;
@@ -114,14 +122,7 @@ router.get("/:name", async(req, res, next) => {
       res.status(400).send("Requires Range header");
     } 
 
-    const memeQuery = await pool.query(
-      `
-        SELECT size, format
-        FROM meme
-        WHERE "nameGroup" = $1;
-      `,
-      [groupname]
-    );
+    const memeQuery = memeQuery(groupname);
 
     if (!memeQuery.rowCount) {
       throw Error('Meme not found');
@@ -139,8 +140,9 @@ router.get("/:name", async(req, res, next) => {
     try {
       memeObj = await s3.getObject(params);
     } catch (err) {
-      return res.status(500).json({
-        message: "Hey, Can we talk? We need to spend some time apart. I've been down lately and It's not you it's me I just need some time. FeelsBadMan"
+      next(err)
+      return res.status(err.status).json({
+        message: err.message
       })
     }
 
@@ -163,36 +165,30 @@ router.get("/:name", async(req, res, next) => {
     }
   } catch(err) {
     next(err) // Pass errors to Express.
-    console.log(err.message)
-    res.status(errorCode).json({
-      message: "something went wrong"
+    res.status(err.status).json({
+      message: err.message
     })
   }
 })
 
-
-// get memes info to reqest in frontend viewers
 router.get("/imports/:n", async(req, res, next) => {
   try{
-    console.log(`/memes/imports/:n hit; n: ${req.params.n}`);
     if (req.query.token && !verifyAToken(req.query.token)) {
       errorCode = 401
       return res.status(401).send("Cookie monster does not approve");
     }
-  
-    const memeCount = await pool.query(`
-      SELECT count(DISTINCT name)
-      FROM meme;
-    `).then(value => value.rows[0].count)
 
-    const randomMemesQueries = await pool.query(twoParamQuery(memeCount, req.params.n));
+    let memeCount = await memeCountQuery();
+    memeCount = memeCount.rows[0].count;
+
+    let randomMemeResult = await memesFloorRandomQuery(memeCount, req.params.n);
 
     let names, nameGroups, formats = [];
-    if (randomMemesQueries && randomMemesQueries.rows){
-      names = randomMemesQueries.rows.map(row => row.name);
-      nameGroups = randomMemesQueries.rows.map(row => row.nameGroup).filter(onlyUnique);
-      formats = randomMemesQueries.rows.map(row => row.format);
-      description = randomMemesQueries.rows.map(row => row.description);
+    if (randomMemeResult && randomMemeResult.rows){
+      names = randomMemeResult.rows.map(row => row.name);
+      nameGroups = randomMemeResult.rows.map(row => row.nameGroup).filter(onlyUnique);
+      formats = randomMemeResult.rows.map(row => row.format);
+      description = randomMemeResult.rows.map(row => row.description);
     }
 
     return res.status(200).json({ 
@@ -205,65 +201,53 @@ router.get("/imports/:n", async(req, res, next) => {
     });
   } catch (err) {
     next(err) // Pass errors to Express.
-    console.log(err.message);
-    return res.status(400).json({
+    return res.status(err.status).json({
       error: err.message
     });
   };
 });
 
-
 // upload a video/image/audio
 router.post("/upload-meme", async(req, res, next) => {
-  let errorCode = 400;
   try {
+    // TODO: implement on all routes
     console.log('POST /memes/upload-meme hit');
+
+    let uploadError = '';
+    const { files } = req;
+    const { username, desc, tags } = req.body;
+    const description = desc ? desc : '';
+
+    // remove probably
+    const availableCookieTags = [...decoded.public];
+
     if (!req.query.token || !verifyAToken(req.query.token)) {
       errorCode = 401
       return res.status(401).send("Cookie monster does not approve");
     }
+    const uploadCheck = uploadIsValid(username, desc);
+
+    if (!uploadCheck.valid) {
+      res.status(uploadCheck.status).json({
+        message: uploadCheck.message
+      })
+    }
 
     const decoded = decodeToken(req.query.token);
-
-    const availableTags = [...decoded.public, decoded.private];
 
     if (!req.files || Object.keys(req.files).length === 0) {
       console.log("No files were uploaded.");
       // TODO: seems like it could be cleaner
       return res.status(400).send('No files were uploaded.');
     }
-    
-
-
-    let uploadError = '';
-
-    const { files } = req;
-
-
-    console.log(req.body)
-    const { username, desc, tags } = req.body;
-    
-
-
-    if (!username) {
-      return res.status(401).send('No user was associated to this request');
-    }
-
-    // Temporary, maybe use knex.raw again?
-    if (
-      desc &&
-      desc.includes(';') &&
-      dangerStrings.filter(s => desc.toUpperCase().includes(s))
-        .length
-      ) {
-      return res.status(errorCode).send("invalid description");
-    }
-
-    const description = desc ? desc : '';
 
     const memeName = v4();
     let count = 0;
     
+    // adding to Databases
+    // S3
+    // PostgrSQL
+
     while(count < Object.keys(files).length) {
       const key = `${memeName}_${count}`;
       const s3params = {
@@ -271,7 +255,7 @@ router.post("/upload-meme", async(req, res, next) => {
         Key: key,
         Body: files[count].data,
       }
-
+      // S3
       await Promise.all([s3.putObject(s3params,
         (err, data) => {
           if (err) {
@@ -282,7 +266,6 @@ router.post("/upload-meme", async(req, res, next) => {
       ]);
 
       if (uploadError) break;
-
       const params = [
         key,
         memeName,
@@ -292,50 +275,27 @@ router.post("/upload-meme", async(req, res, next) => {
         !count ? description : ''
       ];
 
-      /* 
-        TODO: knex has some way of undoing queries if something fails,
-        pg certainly has a similar method, implement it when possible
-        to avoid useless rows.(Rollbacks)
-      */
+      const result = await createMemeEnteryQuery(params); 
 
-      const result = await pool.query(`
-        INSERT INTO meme(
-          name,
-          "nameGroup",
-          format,
-          size,
-          poster,
-          description
-        ) VALUES(
-          $1,
-          $2,
-          $3,
-          $4,
-          $5,
-          $6
-        )
-        RETURNING memetagid;
-      `, params);
-
-      const memetagid = result.rows[0].memetagid;
+      const memeTagId = result.rows[0].memetagid;
   
-      if (tags) {
+      if (tags && tags.length <= 10) {
         for (let i = 0; i < tags.length; i++) {
-          if (tags && !availableTags.includes(tags[i])) {
-            return res.status(errorCode).send("invalid tag");
+          const tagCheck = await tagCheckQuery(tags[i]);
+          if (availableCookieTags.includes(tags[i]) || tagCheck.rows.length) {
+            // tag exists, create entry
+            await createMemeTagEntry(tags[i], memeTagId);
           } else {
-            await pool.query(`
-              INSERT INTO contenttags(
-                groupname,
-                tagid
-              )
-              VALUES(
-                $1,
-                $2
-              )
-            `, [tags[i], memetagid]);
+            // tag doesn't exist
+            await createMemeTagEntry(tags[i], memeTagId);
+            await createTagEntry(tags[i])
           }
-        }
+          // TODO: tags not allowed to be created or added to
+        } 
+      } else if (tags && tags.length > 10) {
+        res.status(401).json({
+          message: "tag limit exceeded"
+        })
       }
 
       if (uploadError) throw Error(uploadError);
@@ -347,17 +307,14 @@ router.post("/upload-meme", async(req, res, next) => {
 
   } catch (err) {
     next(err) // Pass errors to Express.
-    console.log(err.message);
-    return res.status(errorCode).json({
-      error: "There was a problem, Try again, unless this is you trying again then you can stop, Sooo, if your seeing this ... sorry it doesn't work? ¯\\_(ツ)_/¯ "
+    return res.status(err.status).json({
+      error: err.message
     });
   };
 });
 
-
 // upload a link
 router.post("/upload-link", async(req, res, next) => {
-  let errorCode = 400;
   try {
     console.log('POST /memes/upload-link hit');
 
@@ -404,26 +361,9 @@ router.post("/upload-link", async(req, res, next) => {
       return res.status(errorCode).send("invalid description");
     }
 
-    // puts link in table
-    const result = await pool.query(`
-      INSERT INTO weblinks(
-        link,
-        poster,
-        previewsize,
-        previewformat,
-        description
-      )
-      VALUES(
-        $1,
-        $2,
-        $3,
-        $4,
-        $5
-      )
-      RETURNING weblinkid;
-    `, [link, username, files.preview.size, files.preview.mimetype, desc]);
+    const createdEntryReturn = await createWebLinkEnteryQuery(link, username, files.preview.size, files.preview.mimetype, desc);
 
-    const weblinkid = result.rows[0].weblinkid;
+    const weblinkid = createdEntryReturn.rows[0].weblinkid;
 
     // puts preview image in s3
     if (!fileDoesntExist) {
@@ -449,24 +389,7 @@ router.post("/upload-link", async(req, res, next) => {
         if (tags && !availableTags.includes(allTags[i])) {
           return res.status(errorCode).send("invalid tag");
         } else {
-          // TODO: add to order to have them chronologically sorted
-          const results1 = pool.query(`
-            SELECT COUNT(*)
-            FROM contenttags
-            WHERE groupname = $1;
-          `, [allTags[i]]);
-          console.log(results1);
-
-          await pool.query(`
-            INSERT INTO contenttags(
-              groupname,
-              tagid
-            )
-            VALUES(
-              $1,
-              $2
-            )
-          `, [allTags[i], weblinkid]);
+          await createMemeTagAssociation(allTags[i], weblinkid)
         }
       }
     }
@@ -477,9 +400,8 @@ router.post("/upload-link", async(req, res, next) => {
 
   } catch(err) {
     next(err) // Pass errors to Express.
-    console.log(err.message);
-    return res.status(errorCode).json({
-      error: "There was a problem, Try again, unless this is you trying again then you can stop, Sooo, if your seeing this ... sorry it doesn't work? ¯\\_(ツ)_/¯ "
+    return res.status(err.status).json({
+      error: err.message
     });
   };
 });
