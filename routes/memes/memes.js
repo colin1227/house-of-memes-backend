@@ -1,7 +1,7 @@
 const express = require("express");
 const fs = require('fs');
 const { v4 } = require("uuid");
-
+const { s3 } = require('../../aws');
 const {
   memeQuery,
   memeCountQuery,
@@ -114,25 +114,15 @@ router.get("/:name", async(req, res, next) => {
   try {
     console.log(`GET /m/meme/:name hit, name: ${req.params.name}`);
     const { name: s3_meme_name } = req.params;
-    const range = req.headers.range;
-
-
-    const groupname = s3_meme_name.slice(0, s3_meme_name.length - 2);
-
-    if (!range) {
-      res.status(400).send("Requires Range header");
-    } 
-
-    const memePsqlQuery = await memeQuery(groupname);
-
-
-    if (!(await memePsqlQuery).rows.length) {
+    
+    const memeName = s3_meme_name.slice(0, s3_meme_name.length - 2);
+    const memePsqlQuery = await memeQuery(memeName);
+    
+    if (!memePsqlQuery.rows.length) {
       throw Error('Meme not found');
     }
-
-    const { size: videoSize, format } = memePsqlQuery.rows[0];
-    const contentRange = `${0}-${videoSize - 1}/${videoSize}`;
-
+    const meme = memePsqlQuery.rows[0];
+    const contentRange = `${0}-${meme.size - 1}/${meme.size}`;
     const params = {
       Bucket: process.env.AWS_BUCKET_NAME,
       Key: s3_meme_name,
@@ -147,20 +137,18 @@ router.get("/:name", async(req, res, next) => {
         message: err.message
       })
     }
-
-    if (format.includes('video')){
-
+    if (meme.format.includes('video')){
       const headers = {
         "Accept-Ranges": "bytes",
         "Content-Range": `bytes ${contentRange}`,
-        "Content-Length": videoSize,
-        "Content-Type": format
+        "Content-Length": meme.size,
+        "Content-Type": meme.format
       };
       res.writeHead(206, headers);
 
       memeObj.createReadStream().pipe(res);
 
-    } else if (format.includes('image')) {
+    } else if (meme.format.includes('image')) {
       res.status(200).json({
         not: 'done'
       })

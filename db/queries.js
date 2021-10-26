@@ -139,7 +139,7 @@ const memeQuery = (memeName) => {
     `
       SELECT size, format
       FROM memes
-      WHERE name_group = '$1';
+      WHERE name_group = $1;
     `,
     [memeName]
   );
