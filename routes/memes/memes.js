@@ -3,6 +3,7 @@ const fs = require('fs');
 const { v4 } = require("uuid");
 
 const {
+  memeQuery,
   memeCountQuery,
   previewQuery,
   memesFloorRandomQuery,
