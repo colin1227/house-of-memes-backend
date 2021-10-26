@@ -1,6 +1,7 @@
 .env
 node_modules
 
+db/knex/migrations/*
 
 Todo.txt
 server.key

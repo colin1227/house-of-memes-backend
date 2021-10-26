@@ -89,7 +89,7 @@ router.get('/:groupname', async(req, res, next) => {
       ],
       previews: linkQueryResults.rows.map(r => r.previewsize ? true : false),
       previewIds: linkQueryResults.rows.map(r => r.web_link_id),
-      memes: memeQueryResults.rows.map(r => r.name),
+      memes: memeQueryResults.rows.map(r => r.aws_name),
       formats: memeQueryResults.rows.map(r => r.format),
       linkRows: linkQueryResults.rowCount,
       memeRows: memeQueryResults.rowCount

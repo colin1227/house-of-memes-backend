@@ -89,7 +89,7 @@ router.get('/:username', async(req, res, next) => {
     const results = queryMemesByUser(req.params.username);
   
     res.status(200).json({
-      memeUrls: results.rows.map(a => a.name)
+      memeUrls: results.rows.map(a => a.aws_name)
     })
   } catch (err) {
     next(err);

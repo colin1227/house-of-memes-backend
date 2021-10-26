@@ -36,7 +36,7 @@ const createUserQuery = (sqlParams) => {
 
 const queryMemesByUser = (username) => {
   return pool.query(`
-    SELECT name
+    SELECT aws_name
     FROM memes
     WHERE poster = $1;
   `, [username]);
@@ -155,7 +155,7 @@ const memeCountQuery = () => {
 
 const memesFloorRandomQuery = (memeCount, limit) => {
   return pool.query(`
-    SELECT name, "name_group", format, description
+    SELECT aws_name, "name_group", format, description
     FROM memes
     ORDER BY FLOOR(random() * ${memeCount})
     LIMIT ${limit};`);
@@ -188,9 +188,9 @@ const queryMemesByGroup = (groupName) => {
 // unused but will implement later
 const queryMemesFloorRandomCountQueryWithNoRepeatList = (viewedList, memeCount, limit) => {
   return pool.query(`
-    SELECT name, "name_group", format, description
+    SELECT aws_name, "name_group", format, description
     FROM memes
-    WHERE name NOT IN(${viewedList.map(o => `'${o}'`)})
+    WHERE aws_name NOT IN(${viewedList.map(o => `'${o}'`)})
     ORDER BY FLOOR(random() * ${memeCount})
     LIMIT ${limit};`);
 }
@@ -203,7 +203,7 @@ const queryMemesFloorRandomCountQueryWithNoRepeatList = (viewedList, memeCount, 
 const createMemeEnteryQuery = (params) => {
   return pool.query(`
   INSERT INTO memes(
-    name,
+    aws_name,
     "name_group",
     format,
     size,
