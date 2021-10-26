@@ -134,14 +134,14 @@ const previewQuery = (id) => {
   `,[id]);
 }
 
-const memeQuery = (groupName) => {
+const memeQuery = (memeName) => {
   return pool.query(
     `
       SELECT size, format
       FROM memes
-      WHERE name_group = $1;
+      WHERE name_group = '$1';
     `,
-    [groupName]
+    [memeName]
   );
 }
 

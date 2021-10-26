@@ -123,9 +123,10 @@ router.get("/:name", async(req, res, next) => {
       res.status(400).send("Requires Range header");
     } 
 
-    const memePsqlQuery = memeQuery(groupname);
+    const memePsqlQuery = await memeQuery(groupname);
 
-    if (!memePsqlQuery.rowCount) {
+
+    if (!(await memePsqlQuery).rows.length) {
       throw Error('Meme not found');
     }
 
@@ -186,7 +187,7 @@ router.get("/imports/:n", async(req, res, next) => {
 
     let names, nameGroups, formats = [];
     if (randomMemeResult && randomMemeResult.rows){
-      names = randomMemeResult.rows.map(row => row.name);
+      names = randomMemeResult.rows.map(row => row.aws_name);
       nameGroups = randomMemeResult.rows.map(row => row.name_group).filter(onlyUnique);
       formats = randomMemeResult.rows.map(row => row.format);
       description = randomMemeResult.rows.map(row => row.description);
