@@ -122,13 +122,13 @@ router.get("/:name", async(req, res, next) => {
       res.status(400).send("Requires Range header");
     } 
 
-    const memeQuery = memeQuery(groupname);
+    const memePsqlQuery = memeQuery(groupname);
 
-    if (!memeQuery.rowCount) {
+    if (!memePsqlQuery.rowCount) {
       throw Error('Meme not found');
     }
 
-    const { size: videoSize, format } = memeQuery.rows[0];
+    const { size: videoSize, format } = memePsqlQuery.rows[0];
     const contentRange = `${0}-${videoSize - 1}/${videoSize}`;
 
     const params = {
