@@ -139,11 +139,12 @@ const memeQuery = (groupName) => {
     `
       SELECT size, format
       FROM memes
-      WHERE "name_group" = $1;
+      WHERE name_group = $1;
     `,
     [groupName]
   );
 }
+
 
 // maybe add to memesFloorRandomQuery as sub query
 const memeCountQuery = () => {
