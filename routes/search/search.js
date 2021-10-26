@@ -16,7 +16,7 @@ router.get('/hashtags', async(req, res, next) => {
   try {
 
     const hashTagsTermQuery = await hashTagsTermQuery(req.query.term);
-    hashTagsTermQuery = hashTagsTermQuery.rows.map(value => value.groupname);
+    hashTagsTermQuery = hashTagsTermQuery.rows.map(value => value.hashtag_id);
 
     res.json({
       hashtags: hashTagsTermQuery

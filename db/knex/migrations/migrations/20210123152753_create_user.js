@@ -5,7 +5,6 @@ const up = (knex, _) => {
         "userId" SERIAL PRIMARY KEY,
         "username" varchar(25) NOT NULL UNIQUE,
         "password" text,
-        "adult" BOOLEAN DEFAULT TRUE,
         "email" character varying(255)
         REFERENCES email(address),
         "subEndDate" TIMESTAMPTZ DEFAULT NULL,

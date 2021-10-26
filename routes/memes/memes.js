@@ -71,7 +71,7 @@ router.get('/preview/:id', async(req, res, next) => {
     if (!results.rows.length) {
       return res.status(400).send('no preview available');
     }
-    const { previewsize, previewformat } = results.rows[0];
+    const { preview_size, preview_format } = results.rows[0];
 
     console.log(results.rows);
 
@@ -93,9 +93,9 @@ router.get('/preview/:id', async(req, res, next) => {
 
     const headers = {
       "Accept-Ranges": "bytes",
-      "Content-Range": `bytes 0-${previewsize - 1}/${previewsize}`,
-      "Content-Length": previewsize,
-      "Content-Type": previewformat
+      "Content-Range": `bytes 0-${preview_size - 1}/${preview_size}`,
+      "Content-Length": preview_size,
+      "Content-Type": preview_format
     };
     res.writeHead(206, headers);
 
@@ -186,7 +186,7 @@ router.get("/imports/:n", async(req, res, next) => {
     let names, nameGroups, formats = [];
     if (randomMemeResult && randomMemeResult.rows){
       names = randomMemeResult.rows.map(row => row.name);
-      nameGroups = randomMemeResult.rows.map(row => row.nameGroup).filter(onlyUnique);
+      nameGroups = randomMemeResult.rows.map(row => row.name_group).filter(onlyUnique);
       formats = randomMemeResult.rows.map(row => row.format);
       description = randomMemeResult.rows.map(row => row.description);
     }
@@ -277,7 +277,7 @@ router.post("/upload-meme", async(req, res, next) => {
 
       const result = await createMemeEnteryQuery(params); 
 
-      const memeTagId = result.rows[0].memetagid;
+      const memeTagId = result.rows[0].meme_tag_id;
   
       if (tags && tags.length <= 10) {
         for (let i = 0; i < tags.length; i++) {
@@ -325,7 +325,7 @@ router.post("/upload-link", async(req, res, next) => {
 
     const decoded = decodeToken(req.query.token);
 
-    const availableTags = [...decoded.public, ...decoded.private];
+    const availableTags = [...decoded.public];
 
     console.log(availableTags);
     const { files } = req;
@@ -363,13 +363,13 @@ router.post("/upload-link", async(req, res, next) => {
 
     const createdEntryReturn = await createWebLinkEnteryQuery(link, username, files.preview.size, files.preview.mimetype, desc);
 
-    const weblinkid = createdEntryReturn.rows[0].weblinkid;
+    const web_link_id = createdEntryReturn.rows[0].web_link_id;
 
     // puts preview image in s3
     if (!fileDoesntExist) {
       const s3params = {
         Bucket: process.env.AWS_BUCKET_NAME,
-        Key: weblinkid,
+        Key: web_link_id,
         Body: files.preview.data,
       }
   
@@ -389,13 +389,13 @@ router.post("/upload-link", async(req, res, next) => {
         if (tags && !availableTags.includes(allTags[i])) {
           return res.status(errorCode).send("invalid tag");
         } else {
-          await createMemeTagAssociation(allTags[i], weblinkid)
+          await createMemeTagAssociation(allTags[i], web_link_id)
         }
       }
     }
 
     res.status(201).json({
-      webLinkId: weblinkid
+      web_link_id: web_link_id
     })
 
   } catch(err) {

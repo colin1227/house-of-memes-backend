@@ -82,13 +82,13 @@ router.get('/:groupname', async(req, res, next) => {
 
     return res.status(200).json({
       groupName: req.params.groupname,
-      links: linkQueryResults.rows.map(r => r.link),
+      links: linkQueryResults.rows.map(r => r.web_link),
       descriptions: [
         ...linkQueryResults.rows.map(r => r.description ? r.description : false),
         ...memeQueryResults.rows.map(r => r.description ? r.description : false)
       ],
       previews: linkQueryResults.rows.map(r => r.previewsize ? true : false),
-      previewIds: linkQueryResults.rows.map(r => r.weblinkid),
+      previewIds: linkQueryResults.rows.map(r => r.web_link_id),
       memes: memeQueryResults.rows.map(r => r.name),
       formats: memeQueryResults.rows.map(r => r.format),
       linkRows: linkQueryResults.rowCount,

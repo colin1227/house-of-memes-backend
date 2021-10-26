@@ -6,7 +6,6 @@ const bcrypt = require('bcrypt');
 const router = express.Router();
 const {
   loginDataQuery,
-  getGroupsByUserId,
   usernameCountQuery,
   queryMemesByUser } = require('../../db/queries');
 
@@ -33,17 +32,10 @@ router.post('/sign-in', async(req, res, next) => {
       }
       return true;
     });
-
-    // retrive public groups and sign the token.
-
-    const groupsResults = getGroupsByUserId(userQuery.rows[0].userId);
     
     const tokenObject = {
       userId: userQuery.rows[0].userid
     };
-    if (groupsResults.rows.length > 0) {
-      tokenObject.public = groupsResults.rows.map(row => row.groupname);
-    }
 
     const token = signAToken(tokenObject);
 

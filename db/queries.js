@@ -7,41 +7,29 @@ const { pool } = require('./index');
 const usernamesQuery = () => {
   return pool.query(`
     SELECT username
-    FROM userprofile;
+    FROM users;
   `);
 }
 
 const loginDataQuery = (username) => {
   return pool.query(`
-    SELECT password, userid
-    FROM userprofile
+    SELECT password, user_id
+    FROM users
     WHERE username = $1;
     `, [username]);
-}
-
-const getGroupsByUserId = (userId) => {
-  return pool.query(
-    `
-      SELECT groups.groupname
-      FROM groups
-      JOIN "userGroups"
-      ON "userGroups".groupid = groups.groupid
-      WHERE "userGroups".userid = $1;
-    `,
-    [userId]);
 }
 
 const usernameCountQuery = (username) => {
   return pool.query(`
     SELECT COUNT(*)
-    FROM userprofile
+    FROM users
     WHERE username = $1;
   `, [username]);
 }
 
 const createUserQuery = (sqlParams) => {
   return pool.query(`
-      INSERT INTO userprofile(username, password)
+      INSERT INTO users(username, password)
       VALUES( $1, $2);
     `, sqlParams);
 }
@@ -49,7 +37,7 @@ const createUserQuery = (sqlParams) => {
 const queryMemesByUser = (username) => {
   return pool.query(`
     SELECT name
-    FROM meme
+    FROM memes
     WHERE poster = $1;
   `, [username]);
 }
@@ -57,34 +45,21 @@ const queryMemesByUser = (username) => {
 
 // |II.) Search based queries|
 
-
-// unused
-const groupsResults = (userId) => {
-  return pool.query(
-    `
-      SELECT groupname
-      FROM groups
-      JOIN userGroups
-      ON userGroups.groupid = groups.groupid
-      WHERE userGroups.userid = $1;
-    `, [userId]);
-}
-
 // untested
 const popularHashTagsQuery = () => {
   return pool.query(`
     SELECT mode() WITHIN GROUP(ORDER BY DESC)
-    FROM contenttags
-    JOIN groups
-    ON groups.groupname = contenttags.groupname
-    GROUP BY groups.groupid;
+    FROM meme_hashtag_ties
+    JOIN hashtags
+    ON hashtags.hashtag_id = meme_hashtag_ties.hashtag_id
+    GROUP BY hashtags.groupid;
     `);
 }
 
 const tagQuery = () => {
   return pool.query(`
-    SELECT DISTINCT groupname
-    FROM groups;
+    SELECT DISTINCT hashtag_id
+    FROM hashtags;
   `);
 }
 
@@ -92,30 +67,28 @@ const tagQuery = () => {
 // see publicGroupNameQueryByTerm query
 const hashTagsTermQuery = (term) => {
   return pool.query(`
-  SELECT DISTINCT groupname
-  FROM contenttags
+  SELECT DISTINCT hashtag_id
+  FROM meme_hashtag_ties
   LIMIT 10
-  WHERE groupname LIKE %$1%;
+  WHERE hashtag_id LIKE %$1%;
   `, [term]);
 }
 
-
-// |III.) Groups based queries|
+// |III.) Hashtags based queries|
 
 const publicGroupNameQueryByTerm = (term) => {
   return pool.query(`
-    SELECT groupname
-    FROM groups
-    where groups.private = false
-    and groupname LIKE '%${term}%'
+    SELECT hashtag_id
+    FROM hashtags
+    and hashtag_id LIKE '%${term}%'
     LIMIT 10;`);
 }
 
 const createMemeTagEntry = (tag, memeTagId) => {
   return pool.query(`
-    INSERT INTO contenttags(
-      groupname,
-      tagid
+    INSERT INTO meme_hashtag_ties(
+      hashtag_id,
+      meme_tag_id
     )
     VALUES(
       $1,
@@ -126,15 +99,15 @@ const createMemeTagEntry = (tag, memeTagId) => {
 
 const tagCheckQuery = (tag) => {
   return pool.query(`
-    SELECT groupname
-    FROM groups
-    WHERE groupname = $1;
+    SELECT hashtag_id
+    FROM hashtags
+    WHERE hashtag_id = $1;
   `,[tag])
 }
 
 const createTagEntry = (tagName) => {
   return pool.query(`
-    INSERT INTO groups(groupname)
+    INSERT INTO hashtags(hashtag_id)
     VALUES($1)
   `,[tagName]);
 }
@@ -142,10 +115,10 @@ const createTagEntry = (tagName) => {
 // |IV.) Meme based queries|
 
 
-const createGroupScript = (groupName) => {
+const createHashtagScript = (groupName) => {
   return pool.query(`
-    INSERT INTO groups(
-      groupname
+    INSERT INTO hashtags(
+      hashtag_id
     )
     VALUES(
       $1
@@ -155,9 +128,9 @@ const createGroupScript = (groupName) => {
 
 const previewQuery = (id) => {
   return pool.query(`
-  SELECT previewsize, previewformat
+  SELECT previewsize, preview_format
   FROM weblinks
-  WHERE weblinkid = $1;
+  WHERE web_link_id = $1;
   `,[id]);
 }
 
@@ -165,8 +138,8 @@ const memeQuery = (groupName) => {
   return pool.query(
     `
       SELECT size, format
-      FROM meme
-      WHERE "nameGroup" = $1;
+      FROM memes
+      WHERE "name_group" = $1;
     `,
     [groupName]
   );
@@ -176,38 +149,38 @@ const memeQuery = (groupName) => {
 const memeCountQuery = () => {
   return pool.query(`
   SELECT count(*)
-  FROM meme;
+  FROM memes;
   `);
 }
 
 const memesFloorRandomQuery = (memeCount, limit) => {
   return pool.query(`
-    SELECT name, "nameGroup", format, description
-    FROM meme
+    SELECT name, "name_group", format, description
+    FROM memes
     ORDER BY FLOOR(random() * ${memeCount})
     LIMIT ${limit};`);
 }
 
 const queryLinksByGroup = (groupName) => {
   return pool.query(`
-    SELECT weblinks.link, contenttags.order, weblinks.previewsize, weblinks.weblinkid, weblinks.description
+    SELECT weblinks.web_link, meme_hashtag_ties.order, weblinks.previewsize, weblinks.web_link_id, weblinks.description
     FROM weblinks
-    JOIN contenttags
-    ON weblinks.weblinkid = contenttags.tagid
-    WHERE contenttags.groupname = $1
-    ORDER BY contenttags.order;
+    JOIN meme_hashtag_ties
+    ON weblinks.web_link_id = meme_hashtag_ties.meme_tag_id
+    WHERE meme_hashtag_ties.hashtag_id = $1
+    ORDER BY meme_hashtag_ties.order;
   `,
   [groupName.replace('_', ' ')]);
 }
 
 const queryMemesByGroup = (groupName) => {
   return pool.query(`
-    SELECT meme.name, contenttags.order, meme.format, meme.description
-    FROM meme
-    JOIN contenttags
-    ON meme.memetagid = contenttags.tagid
-    WHERE contenttags.groupname = $1
-    ORDER BY contenttags.order;
+    SELECT memes.aws_name, meme_hashtag_ties.order, memes.format, memes.description
+    FROM memes
+    JOIN meme_hashtag_ties
+    ON memes.meme_tag_id = meme_hashtag_ties.meme_tag_id
+    WHERE meme_hashtag_ties.hashtag_id = $1
+    ORDER BY meme_hashtag_ties.order;
   `,
   [groupName]);
 }
@@ -215,8 +188,8 @@ const queryMemesByGroup = (groupName) => {
 // unused but will implement later
 const queryMemesFloorRandomCountQueryWithNoRepeatList = (viewedList, memeCount, limit) => {
   return pool.query(`
-    SELECT name, "nameGroup", format, description
-    FROM meme
+    SELECT name, "name_group", format, description
+    FROM memes
     WHERE name NOT IN(${viewedList.map(o => `'${o}'`)})
     ORDER BY FLOOR(random() * ${memeCount})
     LIMIT ${limit};`);
@@ -229,9 +202,9 @@ const queryMemesFloorRandomCountQueryWithNoRepeatList = (viewedList, memeCount, 
 */
 const createMemeEnteryQuery = (params) => {
   return pool.query(`
-  INSERT INTO meme(
+  INSERT INTO memes(
     name,
-    "nameGroup",
+    "name_group",
     format,
     size,
     poster,
@@ -244,17 +217,17 @@ const createMemeEnteryQuery = (params) => {
     $5,
     $6
   )
-  RETURNING memetagid;
+  RETURNING meme_tag_id;
 `, params);
 }
 
-const createWebLinkEnteryQuery = (link, username, fileSize, fileType, description) => {
+const createWebLinkEnteryQuery = (web_link, username, fileSize, fileType, description) => {
   return pool.query(`
     INSERT INTO weblinks(
-      link,
+      web_link,
       poster,
-      previewsize,
-      previewformat,
+      preview_size,
+      preview_format,
       description
     )
     VALUES(
@@ -264,29 +237,30 @@ const createWebLinkEnteryQuery = (link, username, fileSize, fileType, descriptio
       $4,
       $5
     )
-    RETURNING weblinkid;
-  `, [link, username, fileSize, fileType, description]);
+    RETURNING web_link_id;
+  `, [web_link, username, fileSize, fileType, description]);
 }
 
-const createMemeTagAssociation = (tag, webLinkId) => {
+// wrong because web_link_id is an integer and should be a uuid.
+const createMemeTagAssociation = (tag, web_link_id) => {
   return pool.query(`
-  INSERT INTO contenttags(
-    groupname,
-    tagid
+  INSERT INTO meme_hashtag_ties(
+    hashtag_id,
+    meme_tag_id
   )
   VALUES(
     $1,
     $2
   )
-`, [tag, webLinkId]);
+`, [tag, web_link_id]);
 }
 
 // unused
 const getGroupCountQuery = () => {
   return pool.query(`
     SELECT COUNT(*)
-    FROM contenttags
-    WHERE groupname = $1;
+    FROM meme_hashtag_ties
+    WHERE hashtag_id = $1;
   `, [allTags[i]]);
 }
 
@@ -295,13 +269,12 @@ module.exports = {
   // Users
   usernamesQuery,
   loginDataQuery,
-  getGroupsByUserId,
   usernameCountQuery,
   createUserQuery,
   queryMemesByUser,
   createMemeTagEntry,
 
-  // Groups
+  // Hashtags
   tagQuery,
   queryLinksByGroup,
   queryMemesByGroup,
@@ -310,7 +283,7 @@ module.exports = {
   createTagEntry,
 
   // Memes
-  createGroupScript,
+  createHashtagScript,
   createMemeEnteryQuery,
   createWebLinkEnteryQuery,
   createMemeTagAssociation,
