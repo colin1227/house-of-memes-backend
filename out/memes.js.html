@@ -1,4 +1,32 @@
-const express = require("express");
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: memes.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: memes.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>const express = require("express");
 const fs = require('fs');
 const { v4 } = require("uuid");
 const { s3 } = require('../../aws');
@@ -27,8 +55,8 @@ const uploadIsValid = (username, description) => {
       message: 'No user was associated to this request'
     }
   } else if (
-    description &&
-    description.includes(';') &&
+    description &amp;&amp;
+    description.includes(';') &amp;&amp;
     dangerStrings.filter(s => description.toUpperCase().includes(s))
       .length
     ) {
@@ -111,10 +139,10 @@ router.get('/preview/:id', async(req, res, next) => {
 })
 
 /**
-* @name /memes/:name
+* @name route/:name
 * @param {string} name
 * @example GET {baseURL}/memes/0e56e35b-8aec-46f7-93fa-134b686054be_0
-* @summary Queries and returns meme from S3 and PostgreSQL. 
+* @summary queries and returns meme from S3 and PostgreSQL. 
 */
 router.get("/:name", async(req, res, next) => {
   try {
@@ -167,17 +195,9 @@ router.get("/:name", async(req, res, next) => {
   }
 })
 
-/**
-* @name /memes/imports/:n
-* @param {number} n
-* @example GET {baseURL}/import/4
-* @summary Queries specified number of random memes
-* and returns data present to frontend and request video files from
-* /memes/:name .
-*/
 router.get("/imports/:n", async(req, res, next) => {
   try{
-    if (req.query.token && !verifyAToken(req.query.token)) {
+    if (req.query.token &amp;&amp; !verifyAToken(req.query.token)) {
       errorCode = 401
       return res.status(401).send("Cookie monster does not approve");
     }
@@ -188,7 +208,7 @@ router.get("/imports/:n", async(req, res, next) => {
     let randomMemeResult = await memesFloorRandomQuery(memeCount, req.params.n);
 
     let names, nameGroups, formats = [];
-    if (randomMemeResult && randomMemeResult.rows){
+    if (randomMemeResult &amp;&amp; randomMemeResult.rows){
       names = randomMemeResult.rows.map(row => row.aws_name);
       nameGroups = randomMemeResult.rows.map(row => row.name_group).filter(onlyUnique);
       formats = randomMemeResult.rows.map(row => row.format);
@@ -211,14 +231,7 @@ router.get("/imports/:n", async(req, res, next) => {
   };
 });
 
-/**
-* @name /memes/upload-meme
-* @summary Inserts meme into AWS S3 bucket and PSQL tables.
-* @param {string} username
-* @param {string} desc
-* @param {array} tags
-* @param {file} files
-*/
+// upload a video/image/audio
 router.post("/upload-meme", async(req, res, next) => {
   try {
     // TODO: implement on all routes
@@ -259,7 +272,7 @@ router.post("/upload-meme", async(req, res, next) => {
     // S3
     // PostgrSQL
 
-    while(count < Object.keys(files).length) {
+    while(count &lt; Object.keys(files).length) {
       const key = `${memeName}_${count}`;
       const s3params = {
         Bucket: process.env.AWS_BUCKET_NAME,
@@ -290,8 +303,8 @@ router.post("/upload-meme", async(req, res, next) => {
 
       const memeTagId = result.rows[0].meme_tag_id;
   
-      if (tags && tags.length <= 10) {
-        for (let i = 0; i < tags.length; i++) {
+      if (tags &amp;&amp; tags.length &lt;= 10) {
+        for (let i = 0; i &lt; tags.length; i++) {
           const tagCheck = await tagCheckQuery(tags[i]);
           if (availableCookieTags.includes(tags[i]) || tagCheck.rows.length) {
             // tag exists, create entry
@@ -303,7 +316,7 @@ router.post("/upload-meme", async(req, res, next) => {
           }
           // TODO: tags not allowed to be created or added to
         } 
-      } else if (tags && tags.length > 10) {
+      } else if (tags &amp;&amp; tags.length > 10) {
         res.status(401).json({
           message: "tag limit exceeded"
         })
@@ -340,7 +353,7 @@ router.post("/upload-link", async(req, res, next) => {
 
     console.log(availableTags);
     const { files } = req;
-    const fileDoesntExist = typeof files === 'object' && !files;
+    const fileDoesntExist = typeof files === 'object' &amp;&amp; !files;
     const { link, username, description: desc, tags } = req.body;
 
     const allTags = tags.split(',');
@@ -348,13 +361,13 @@ router.post("/upload-link", async(req, res, next) => {
     if (!req.body) return res.status(errorCode).send("body required");
 
     if (
-      !fileDoesntExist &&
+      !fileDoesntExist &amp;&amp;
       !files.preview.mimetype.includes('image')) {
       return res.status(errorCode).send('preview media must be an image type');
     }
 
     if (
-      !fileDoesntExist &&
+      !fileDoesntExist &amp;&amp;
       Object.keys(req.files).length > 1
       ) {
       res.status(errorCode).send('Only one preview image per link');
@@ -364,8 +377,8 @@ router.post("/upload-link", async(req, res, next) => {
     if (!username) return res.status(errorCode).send("username required in body");
 
     if (
-      desc &&
-      desc.includes(';') &&
+      desc &amp;&amp;
+      desc.includes(';') &amp;&amp;
       dangerStrings.filter(s => desc.toUpperCase().includes(s))
         .length
       ) {
@@ -396,8 +409,8 @@ router.post("/upload-link", async(req, res, next) => {
 
     // adds tags to link
     if (allTags) {
-      for (let i = 0; i < allTags.length; i++) {
-        if (tags && !availableTags.includes(allTags[i])) {
+      for (let i = 0; i &lt; allTags.length; i++) {
+        if (tags &amp;&amp; !availableTags.includes(allTags[i])) {
           return res.status(errorCode).send("invalid tag");
         } else {
           await createMemeTagAssociation(allTags[i], web_link_id)
@@ -417,4 +430,26 @@ router.post("/upload-link", async(req, res, next) => {
   };
 });
 
-module.exports = router;
+module.exports = router;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#route/:name">route/:name</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 3.6.7</a> on Mon Nov 08 2021 15:03:08 GMT-0500 (Eastern Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
