@@ -186,6 +186,14 @@ const queryMemesByGroup = (groupName) => {
   [groupName]);
 }
 
+const memeSearchQuery = (term) => {
+  return pool.query(`
+    SELECT description, aws_name, format
+    FROM memes
+    WHERE LOWER(description) LIKE $1;
+  `,[`%${term}%`]);
+};
+
 // unused but will implement later
 const queryMemesFloorRandomCountQueryWithNoRepeatList = (viewedList, memeCount, limit) => {
   return pool.query(`
@@ -284,6 +292,7 @@ module.exports = {
   createTagEntry,
 
   // Memes
+  memeSearchQuery,
   createHashtagScript,
   createMemeEnteryQuery,
   createWebLinkEnteryQuery,

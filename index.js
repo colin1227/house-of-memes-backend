@@ -4,22 +4,22 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 
 require('dotenv').config();
-
 const port = process.env.PORT || 9000;
 
 const memes = require("./routes/memes/memes");
 const users = require("./routes/users/users");
 const general = require("./routes/general/general");
 const groups = require("./routes/groups/groups");
+const searches = require("./routes/search/search");
+
 const app = express();
-
 app.use(fileUpload());
-
 app.use(cors());
 
 app.use("/memes/", memes);
 app.use("/users/", users);
 app.use("/groups/", groups);
+app.use("/search/", searches);
 app.use("/", general);
 
 
