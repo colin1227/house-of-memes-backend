@@ -208,8 +208,7 @@ router.post("/upload-meme", async(req, res, next) => {
     const { username, desc, tags } = req.body;
     const description = desc ? desc : '';
 
-    // remove probably
-    const availableCookieTags = [...decoded.public];
+
 
     if (!req.query.token || !verifyAToken(req.query.token)) {
       errorCode = 401
@@ -225,6 +224,10 @@ router.post("/upload-meme", async(req, res, next) => {
 
     const decoded = decodeToken(req.query.token);
 
+    // remove probably
+    const availableCookieTags = [...decoded.public];
+
+    
     if (!req.files || Object.keys(req.files).length === 0) {
       console.log("No files were uploaded.");
       // TODO: seems like it could be cleaner
