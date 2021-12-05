@@ -214,6 +214,8 @@ router.post("/upload-meme", async(req, res, next) => {
       errorCode = 401
       return res.status(401).send("Cookie monster does not approve");
     }
+    const decoded = decodeToken(req.query.token);
+
     const uploadCheck = uploadIsValid(username, desc);
 
     if (!uploadCheck.valid) {
@@ -222,12 +224,6 @@ router.post("/upload-meme", async(req, res, next) => {
       })
     }
 
-    const decoded = decodeToken(req.query.token);
-
-    // remove probably
-    const availableCookieTags = [...decoded.public];
-
-    
     if (!req.files || Object.keys(req.files).length === 0) {
       console.log("No files were uploaded.");
       // TODO: seems like it could be cleaner
