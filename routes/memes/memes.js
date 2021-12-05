@@ -9,6 +9,7 @@ const {
   memesFloorRandomQuery,
   createMemeTagEntry,
   createTagEntry,
+  createMemeEnteryQuery,
   createWebLinkEnteryQuery,
   createMemeTagAssociation,
   tagCheckQuery } = require('../../db/queries');
